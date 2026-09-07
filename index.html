@@ -260,12 +260,24 @@ const TABS = {
   from: { label: 'Från jobb', ls: 'trafiklab_stop_from', fallback: '' },
 };
 
+function destText(d) {
+  return ((d.route && d.route.direction) || '') + ' ' +
+         ((d.route && d.route.destination && d.route.destination.name) || '');
+}
+
+// Radfilter per flik. "Från jobb": bara tåg söderut från Hötorget (mot
+// Hagsätra/Farsta strand/Skarpnäck-grenarna) — norrut mot Hässelby döljs.
+const FILTER = {
+  from(d) {
+    return /hagsätra|rågsved|högdalen|bandhagen|stureby|svedmyra|sockenplan|enskede|globen|farsta|hökarängen|gubbängen|tallkrogen|skogskyrkogård|sandsborg|blåsut|skarpnäck|bagarmossen|kärrtorp|björkhagen|hammarbyhöjden|skärmarbrink|gullmarsplan/i.test(destText(d));
+  },
+};
+
 // Radmarkering per flik. "Till jobb": blå för Liljeholmen/Älvsjö, orange för
 // Farsta centrum. "Från jobb": grön för linje 19 (den som går till Högdalen).
 const HIGHLIGHT = {
   to(d) {
-    const dest = ((d.route && d.route.direction) || '') + ' ' +
-                 ((d.route && d.route.destination && d.route.destination.name) || '');
+    const dest = destText(d);
     if (/liljeholmen|älvsjö|alvsjo/i.test(dest)) return 'hl-blue';
     if (/farsta/i.test(dest)) return 'hl-orange';
     return '';
@@ -283,6 +295,7 @@ const LEGEND = {
   ],
   from: [
     { cls: 'sw-green',  text: 'Linje 19 (mot Högdalen)' },
+    { cls: '',          text: 'Endast söderut' },
   ],
 };
 
@@ -338,7 +351,7 @@ function renderTabs() {
 }
 function renderLegend() {
   $('legend').innerHTML = (LEGEND[activeTab] || []).map(l =>
-    `<span><i class="${l.cls}"></i>${escapeHtml(l.text)}</span>`).join('');
+    `<span>${l.cls ? `<i class="${l.cls}"></i>` : ''}${escapeHtml(l.text)}</span>`).join('');
 }
 function updateHeader() {
   const name = STOP_NAMES[activeTab] || STOPS[activeTab];
@@ -468,8 +481,11 @@ function renderEmpty(msg) {
 
 function render(data) {
   const tbody = $('rows');
-  const departures = (data && data.departures) || [];
   const hl = HIGHLIGHT[activeTab] || (() => '');
+  const filt = FILTER[activeTab];
+
+  const allDepartures = ((data && data.departures) || []).slice();
+  const departures = filt ? allDepartures.filter(filt) : allDepartures;
 
   departures.sort((a, b) => {
     const ta = new Date(a.realtime || a.scheduled);
@@ -478,7 +494,9 @@ function render(data) {
   });
 
   if (departures.length === 0) {
-    renderEmpty('Inga avgångar inom 60 minuter.');
+    renderEmpty(filt && allDepartures.length
+      ? 'Inga avgångar söderut inom 60 minuter.'
+      : 'Inga avgångar inom 60 minuter.');
     return;
   }
 
