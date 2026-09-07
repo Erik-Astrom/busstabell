@@ -287,6 +287,7 @@ function escapeHtml(s) {
   }[c]));
 }
 
+let lastData = null;
 let timer = null;
 function scheduleRefresh() {
   if (timer) clearInterval(timer);
@@ -308,6 +309,7 @@ async function fetchDepartures() {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     const data = await res.json();
+    lastData = data;
     render(data);
     setStatus('Senast uppdaterad ' + new Date().toLocaleTimeString('sv-SE'));
   } catch (err) {
@@ -320,13 +322,14 @@ async function fetchDepartures() {
 
 scheduleRefresh();
 fetchDepartures();
-// Update countdowns every 15 s without re-fetching
-setInterval(() => {
-  document.querySelectorAll('.countdown').forEach((el, i) => {
-    // Re-render lazily by re-fetching is overkill; skip for now.
-    // Countdown auto-refreshes on next fetch anyway.
-  });
-}, 15000);
+
+// Räkna ned live var 10:e sekund utan att hämta om (renderar från cachen).
+setInterval(() => { if (lastData) render(lastData); }, 10000);
+
+// Hämta om direkt när fliken blir aktiv igen.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') fetchDepartures();
+});
 </script>
 </body>
 </html>

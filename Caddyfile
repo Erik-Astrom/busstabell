@@ -1,0 +1,15 @@
+# Intern Caddy i containern — serverar den statiska sidan på :3000.
+# TLS + Cloudflare Access ligger utanför (kant-Caddyn i jaghjalpermigsjalv-stacken).
+:3000 {
+	root * /srv
+	file_server
+	encode zstd gzip
+
+	# Liten app, en enda fil — låt uppdateringar slå igenom direkt.
+	header Cache-Control "no-cache"
+
+	log {
+		output stdout
+		format console
+	}
+}

@@ -1,0 +1,26 @@
+# Körs på Hetzner-VPS:en tillsammans med de andra sajterna.
+#   docker compose up -d --build
+#
+# Kant-Caddyn (i jaghjalpermigsjalv-stacken) terminerar TLS och proxar
+# busstabell.jaghjalpermigsjalv.com -> denna container via det delade
+# nätverket "web". Skapa nätverket en gång:  docker network create web
+
+services:
+  busstabell:
+    build: .
+    container_name: busstabell
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Stockholm
+    networks:
+      - web
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  web:
+    external: true
