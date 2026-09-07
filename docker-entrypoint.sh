@@ -8,8 +8,9 @@ esc() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
 cat > /srv/config.json <<EOF
 {
   "key": "$(esc "${TRAFIKLAB_KEY:-}")",
-  "stop": "$(esc "${TRAFIKLAB_STOP:-740069150}")",
-  "interval": "$(esc "${TRAFIKLAB_INTERVAL:-30}")"
+  "interval": "$(esc "${TRAFIKLAB_INTERVAL:-30}")",
+  "to":   { "stop": "$(esc "${TRAFIKLAB_STOP:-740069150}")" },
+  "from": { "stop": "$(esc "${TRAFIKLAB_STOP_FROM:-}")" }
 }
 EOF
 

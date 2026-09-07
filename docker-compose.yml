@@ -7,7 +7,8 @@
 #
 # ~/busstabell/.env på VPS:en (ej i git) — sätts EN gång:
 #   TRAFIKLAB_KEY=din-nyckel-fran-trafiklab
-#   TRAFIKLAB_STOP=740069150
+#   TRAFIKLAB_STOP=740069150        # "Till jobb" (Skrattmåsvägen)
+#   TRAFIKLAB_STOP_FROM=<id>        # "Från jobb" (Hötorget) — sök i appen om okänt
 
 services:
   busstabell:
@@ -18,6 +19,7 @@ services:
       TZ: Europe/Stockholm
       TRAFIKLAB_KEY: ${TRAFIKLAB_KEY:-}
       TRAFIKLAB_STOP: ${TRAFIKLAB_STOP:-740069150}
+      TRAFIKLAB_STOP_FROM: ${TRAFIKLAB_STOP_FROM:-}
       TRAFIKLAB_INTERVAL: ${TRAFIKLAB_INTERVAL:-30}
     networks:
       - web

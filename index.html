@@ -16,6 +16,9 @@
     --good: #3ddc97;
     --warn: #ffb454;
     --bad: #ff6b6b;
+    --hl-blue: #5fb3ff;
+    --hl-orange: #ffb454;
+    --hl-green: #3ddc97;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
@@ -42,6 +45,34 @@
   }
   .status.err { color: var(--bad); }
   main { max-width: 900px; margin: 0 auto; padding: 16px 20px 60px; }
+
+  .tabs {
+    display: flex; gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .tab {
+    padding: 10px 18px; cursor: pointer;
+    background: none; border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted); font-weight: 600; font-size: 14px;
+    font-family: inherit;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 14px;
+    margin-bottom: 16px; font-size: 12px; color: var(--muted);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i {
+    width: 12px; height: 12px; border-radius: 3px; display: inline-block;
+  }
+  .sw-blue   { background: var(--hl-blue); }
+  .sw-orange { background: var(--hl-orange); }
+  .sw-green  { background: var(--hl-green); }
+
   .settings {
     background: var(--panel); border: 1px solid var(--border);
     border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
@@ -66,6 +97,32 @@
     padding: 8px 10px; font-family: var(--mono); font-size: 13px;
   }
   .settings input:focus { outline: none; border-color: var(--accent); }
+
+  .pickers { margin-top: 14px; display: grid; gap: 14px; }
+  .picker .current {
+    font-size: 13px; color: var(--text); margin: 4px 0 6px;
+  }
+  .picker .current .id { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+  .picker .search { display: flex; gap: 6px; }
+  .picker .search input { flex: 1; }
+  .picker .search button {
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 0 14px; cursor: pointer; font-weight: 600; font-size: 13px;
+  }
+  .picker .results { list-style: none; margin: 6px 0 0; padding: 0; }
+  .picker .results li {
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+    margin-top: 4px; cursor: pointer; font-size: 13px;
+  }
+  .picker .results li:hover { background: var(--panel-2); }
+  .picker .results li.muted { color: var(--muted); cursor: default; }
+  .picker .results li.muted:hover { background: none; }
+  .picker .results li .meta {
+    display: block; color: var(--muted); font-size: 11px; margin-top: 2px;
+    font-family: var(--mono);
+  }
+
   table { width: 100%; border-collapse: collapse; }
   thead th {
     text-align: left; padding: 8px 10px;
@@ -76,6 +133,15 @@
   tbody tr { border-bottom: 1px solid var(--border); }
   tbody tr:hover { background: var(--panel); }
   tbody td { padding: 12px 10px; vertical-align: middle; }
+
+  tbody tr.hl-blue   td { background: rgba(95, 179, 255, 0.10); }
+  tbody tr.hl-orange td { background: rgba(255, 180, 84, 0.10); }
+  tbody tr.hl-green  td { background: rgba(61, 220, 151, 0.12); }
+  tbody tr.hl-blue   td:first-child { box-shadow: inset 3px 0 0 var(--hl-blue); }
+  tbody tr.hl-orange td:first-child { box-shadow: inset 3px 0 0 var(--hl-orange); }
+  tbody tr.hl-green  td:first-child { box-shadow: inset 3px 0 0 var(--hl-green); }
+  tbody tr.hl-green .dest { font-weight: 700; }
+
   .line {
     display: inline-block; min-width: 36px; text-align: center;
     padding: 4px 8px; border-radius: 6px;
@@ -86,6 +152,7 @@
   .line.tram { background: #3a2440; color: #ff8fc7; }
   .line.metro { background: #2c3a1d; color: #b3df6d; }
   .line.train { background: #3a2a1d; color: #ffae6d; }
+  .line.boat { background: #1d3a3a; color: #6ddfd0; }
   .dest { font-weight: 500; }
   .track { color: var(--muted); font-size: 12px; }
   .time {
@@ -124,13 +191,16 @@
 </header>
 
 <main>
+  <div class="tabs" id="tabs">
+    <button class="tab" data-tab="to">Till jobb</button>
+    <button class="tab" data-tab="from">Från jobb</button>
+  </div>
+
+  <div class="legend" id="legend"></div>
+
   <details class="settings" id="settings">
     <summary>Inställningar</summary>
     <div class="grid">
-      <div>
-        <label for="stopId">Hållplats-ID</label>
-        <input id="stopId" type="text" inputmode="numeric">
-      </div>
       <div>
         <label for="apiKey">API-nyckel</label>
         <input id="apiKey" type="password" autocomplete="off">
@@ -138,6 +208,27 @@
       <div>
         <label for="interval">Auto-uppdatering (sek)</label>
         <input id="interval" type="number" min="10" step="5">
+      </div>
+    </div>
+
+    <div class="pickers">
+      <div class="picker">
+        <label>"Till jobb"-hållplats</label>
+        <div class="current" id="cur-to">–</div>
+        <div class="search">
+          <input id="q-to" type="text" placeholder="Sök hållplats, t.ex. Skrattmåsvägen">
+          <button id="qbtn-to" type="button">Sök</button>
+        </div>
+        <ul class="results" id="res-to"></ul>
+      </div>
+      <div class="picker">
+        <label>"Från jobb"-hållplats</label>
+        <div class="current" id="cur-from">–</div>
+        <div class="search">
+          <input id="q-from" type="text" placeholder="Sök hållplats, t.ex. Hötorget">
+          <button id="qbtn-from" type="button">Sök</button>
+        </div>
+        <ul class="results" id="res-from"></ul>
       </div>
     </div>
   </details>
@@ -160,52 +251,191 @@
 <script>
 const LS = {
   apiKey: 'trafiklab_key',
-  stopId: 'trafiklab_stop',
   interval: 'trafiklab_interval',
+  activeTab: 'trafiklab_active_tab',
 };
+
+const TABS = {
+  to:   { label: 'Till jobb', ls: 'trafiklab_stop_to',   fallback: '740069150' },
+  from: { label: 'Från jobb', ls: 'trafiklab_stop_from', fallback: '' },
+};
+
+// Radmarkering per flik. "Till jobb": blå för Liljeholmen/Älvsjö, orange för
+// Farsta centrum. "Från jobb": grön för linje 19 (den som går till Högdalen).
+const HIGHLIGHT = {
+  to(d) {
+    const dest = ((d.route && d.route.direction) || '') + ' ' +
+                 ((d.route && d.route.destination && d.route.destination.name) || '');
+    if (/liljeholmen|älvsjö|alvsjo/i.test(dest)) return 'hl-blue';
+    if (/farsta/i.test(dest)) return 'hl-orange';
+    return '';
+  },
+  from(d) {
+    const desig = String((d.route && d.route.designation) || '').trim();
+    return desig === '19' ? 'hl-green' : '';
+  },
+};
+
+const LEGEND = {
+  to: [
+    { cls: 'sw-blue',   text: 'Liljeholmen / Älvsjö' },
+    { cls: 'sw-orange', text: 'Farsta centrum' },
+  ],
+  from: [
+    { cls: 'sw-green',  text: 'Linje 19 (mot Högdalen)' },
+  ],
+};
+
 const $ = id => document.getElementById(id);
-const stopInput = $('stopId');
 const keyInput = $('apiKey');
 const intervalInput = $('interval');
 
+const STOPS = { to: '', from: '' };
+const STOP_NAMES = { to: '', from: '' };
+let activeTab = 'to';
+const lastData = { to: null, from: null };
+const lastFetch = { to: 0, from: 0 };
+let timer = null;
+
 // Ordning: serverns /config.json (satt i .env på VPS:en, funkar på alla
-// enheter direkt) → localStorage (egen override) → inbyggda värden.
+// enheter direkt) → localStorage (egen override per webbläsare) → default.
 async function loadConfig() {
   let server = {};
   try {
     const r = await fetch('config.json', { cache: 'no-store' });
     if (r.ok) server = await r.json();
   } catch (e) {}
-  stopInput.value =
-    localStorage.getItem(LS.stopId) || server.stop || '740069150';
+
   keyInput.value = localStorage.getItem(LS.apiKey) || server.key || '';
-  intervalInput.value =
-    localStorage.getItem(LS.interval) || server.interval || '30';
+  intervalInput.value = localStorage.getItem(LS.interval) || server.interval || '30';
+
+  const srvTo   = (server.to && server.to.stop) || server.stop || '';
+  const srvFrom = (server.from && server.from.stop) || '';
+  STOPS.to   = localStorage.getItem(TABS.to.ls)   || srvTo   || TABS.to.fallback;
+  STOPS.from = localStorage.getItem(TABS.from.ls) || srvFrom || TABS.from.fallback;
+  STOP_NAMES.to   = localStorage.getItem(TABS.to.ls + '_name')   || '';
+  STOP_NAMES.from = localStorage.getItem(TABS.from.ls + '_name') || '';
+
+  activeTab = localStorage.getItem(LS.activeTab) || 'to';
 }
 
-[stopInput, keyInput, intervalInput].forEach(el =>
+// --- Inställningar: nyckel + intervall ---
+[keyInput, intervalInput].forEach(el =>
   el.addEventListener('change', () => {
-    localStorage.setItem(LS.stopId,   stopInput.value.trim());
-    localStorage.setItem(LS.apiKey,   keyInput.value.trim());
+    localStorage.setItem(LS.apiKey, keyInput.value.trim());
     localStorage.setItem(LS.interval, intervalInput.value || '30');
     scheduleRefresh();
     fetchDepartures();
   })
 );
 
-$('refresh').addEventListener('click', fetchDepartures);
+$('refresh').addEventListener('click', () => fetchDepartures(true));
 
-function setStatus(msg, isErr=false) {
+// --- Flikar ---
+function renderTabs() {
+  document.querySelectorAll('.tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === activeTab));
+}
+function renderLegend() {
+  $('legend').innerHTML = (LEGEND[activeTab] || []).map(l =>
+    `<span><i class="${l.cls}"></i>${escapeHtml(l.text)}</span>`).join('');
+}
+function updateHeader() {
+  const name = STOP_NAMES[activeTab] || STOPS[activeTab];
+  $('stopName').textContent = name ? '· ' + name : '';
+}
+function switchTab(tab) {
+  if (!TABS[tab]) return;
+  activeTab = tab;
+  localStorage.setItem(LS.activeTab, tab);
+  renderTabs();
+  renderLegend();
+  updateHeader();
+  if (lastData[tab] && Date.now() - lastFetch[tab] < 15000) {
+    render(lastData[tab]);
+  } else {
+    renderEmpty('Laddar…');
+    fetchDepartures();
+  }
+  scheduleRefresh();
+}
+$('tabs').addEventListener('click', e => {
+  const b = e.target.closest('.tab');
+  if (b) switchTab(b.dataset.tab);
+});
+
+// --- Hållplatssökning ---
+function updatePickerLabels() {
+  ['to', 'from'].forEach(tab => {
+    const el = $('cur-' + tab);
+    if (!STOPS[tab]) { el.textContent = 'Ingen vald'; return; }
+    const name = STOP_NAMES[tab];
+    el.innerHTML = (name ? escapeHtml(name) + ' ' : '') +
+      `<span class="id">${escapeHtml(STOPS[tab])}</span>`;
+  });
+}
+function setupPicker(tab) {
+  const q = $('q-' + tab), btn = $('qbtn-' + tab), res = $('res-' + tab);
+  const run = async () => {
+    const term = q.value.trim();
+    if (term.length < 1) return;
+    const key = keyInput.value.trim();
+    if (!key) { setStatus('Ange API-nyckel först.', true); return; }
+    res.innerHTML = '<li class="muted">Söker…</li>';
+    try {
+      const url = `https://realtime-api.trafiklab.se/v1/stops/name/${encodeURIComponent(term)}?key=${encodeURIComponent(key)}`;
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const data = await r.json();
+      const groups = data.stop_groups || [];
+      if (!groups.length) { res.innerHTML = '<li class="muted">Inga träffar.</li>'; return; }
+      res.innerHTML = groups.slice(0, 8).map(g =>
+        `<li data-id="${escapeHtml(g.id)}" data-name="${escapeHtml(g.name)}">
+           <strong>${escapeHtml(g.name)}</strong>
+           <span class="meta">${escapeHtml((g.transport_modes || []).join(', ') || '–')} · ${escapeHtml(g.id)}</span>
+         </li>`).join('');
+    } catch (e) {
+      res.innerHTML = `<li class="muted">Fel: ${escapeHtml(e.message)}</li>`;
+    }
+  };
+  btn.addEventListener('click', run);
+  q.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); run(); }
+  });
+  res.addEventListener('click', e => {
+    const li = e.target.closest('li[data-id]');
+    if (!li) return;
+    STOPS[tab] = li.dataset.id;
+    STOP_NAMES[tab] = li.dataset.name || '';
+    localStorage.setItem(TABS[tab].ls, STOPS[tab]);
+    localStorage.setItem(TABS[tab].ls + '_name', STOP_NAMES[tab]);
+    res.innerHTML = '';
+    q.value = '';
+    lastFetch[tab] = 0;
+    updatePickerLabels();
+    updateHeader();
+    if (activeTab === tab) fetchDepartures(true);
+  });
+}
+
+function setStatus(msg, isErr = false) {
   const s = $('status');
   s.textContent = msg;
   s.classList.toggle('err', isErr);
 }
 
-function modeClass(routeType) {
-  // GTFS route_type mapping (rough)
-  if (routeType === 0 || routeType === 900) return 'tram';
-  if (routeType === 1 || routeType === 401) return 'metro';
-  if (routeType === 2 || (routeType >= 100 && routeType < 200)) return 'train';
+function modeClass(d) {
+  const m = String((d.route && d.route.transport_mode) || '').toUpperCase();
+  if (m === 'TRAM') return 'tram';
+  if (m === 'METRO') return 'metro';
+  if (m === 'TRAIN') return 'train';
+  if (m === 'BOAT' || m === 'SHIP') return 'boat';
+  if (m === 'BUS') return 'bus';
+  const c = d.route && d.route.transport_mode_code;
+  if (c === 0 || c === 900) return 'tram';
+  if (c === 1 || c === 401 || c === 402) return 'metro';
+  if (c === 2 || (c >= 100 && c < 200)) return 'train';
+  if (c === 4 || c === 1000) return 'boat';
   return 'bus';
 }
 
@@ -221,22 +451,26 @@ function fmtCountdown(iso) {
   const m = Math.round(ms / 60000);
   if (m <= 0) return 'nu';
   if (m < 60) return m + ' min';
-  return Math.floor(m/60) + 't ' + (m%60) + 'm';
+  return Math.floor(m / 60) + 't ' + (m % 60) + 'm';
 }
 
 function delayInfo(scheduled, realtime) {
   if (!scheduled || !realtime) return { text: '', cls: '' };
   const diff = Math.round((new Date(realtime) - new Date(scheduled)) / 60000);
-  if (diff === 0)  return { text: 'i tid',          cls: '' };
-  if (diff > 0)    return { text: '+' + diff + ' min', cls: 'late' };
-  return            { text: diff + ' min',           cls: 'early' };
+  if (diff === 0) return { text: 'i tid', cls: '' };
+  if (diff > 0) return { text: '+' + diff + ' min', cls: 'late' };
+  return { text: diff + ' min', cls: 'early' };
+}
+
+function renderEmpty(msg) {
+  $('rows').innerHTML = `<tr><td colspan="4" class="empty">${escapeHtml(msg)}</td></tr>`;
 }
 
 function render(data) {
   const tbody = $('rows');
-  const departures = data.departures || [];
+  const departures = (data && data.departures) || [];
+  const hl = HIGHLIGHT[activeTab] || (() => '');
 
-  // Sort by realtime || scheduled
   departures.sort((a, b) => {
     const ta = new Date(a.realtime || a.scheduled);
     const tb = new Date(b.realtime || b.scheduled);
@@ -244,38 +478,35 @@ function render(data) {
   });
 
   if (departures.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="empty">Inga avgångar inom 60 minuter.</td></tr>';
+    renderEmpty('Inga avgångar inom 60 minuter.');
     return;
   }
 
-  // Update stop name from first departure if available
-  if (data.stop && data.stop.name) {
-    $('stopName').textContent = '· ' + data.stop.name;
-  } else if (departures[0]?.stop?.name) {
-    $('stopName').textContent = '· ' + departures[0].stop.name;
+  const stopName = (data.stops && data.stops[0] && data.stops[0].name) ||
+                   (departures[0] && departures[0].stop && departures[0].stop.name) || '';
+  if (stopName && !STOP_NAMES[activeTab]) {
+    $('stopName').textContent = '· ' + stopName;
   }
 
   tbody.innerHTML = departures.map(d => {
-    const route   = d.route || {};
-    const trip    = d.trip || {};
-    const cls     = modeClass(route.transport_mode_code ?? route.route_type);
-    const line    = route.designation || route.name || '–';
-    const dest    = route.direction
-                 || route.destination?.name
-                 || trip.direction
-                 || trip.headsign
-                 || '–';
-    const track   = d.scheduled_track || d.realtime_track || '';
-    const sched   = d.scheduled;
-    const real    = d.realtime;
-    const delay   = delayInfo(sched, real);
+    const route = d.route || {};
+    const cls = modeClass(d);
+    const line = route.designation || route.name || '–';
+    const dest = route.direction || (route.destination && route.destination.name) || '–';
+    const track = (d.realtime_platform && d.realtime_platform.designation) ||
+                  (d.scheduled_platform && d.scheduled_platform.designation) || '';
+    const sched = d.scheduled;
+    const real = d.realtime;
+    const delay = delayInfo(sched, real);
     const display = real || sched;
-    const cd      = fmtCountdown(display);
-    const cdCls   = (cd === 'nu') ? 'now' : (cd.endsWith(' min') && parseInt(cd) <= 5) ? 'soon' : '';
+    const cd = fmtCountdown(display);
+    const cdCls = (cd === 'nu') ? 'now'
+                : (cd.endsWith(' min') && parseInt(cd, 10) <= 5) ? 'soon' : '';
     const cancelled = d.canceled || d.is_cancelled;
+    const hlCls = hl(d);
 
     return `
-      <tr class="row ${cancelled ? 'cancelled' : ''}">
+      <tr class="row ${hlCls} ${cancelled ? 'cancelled' : ''}">
         <td><span class="line ${cls}">${escapeHtml(line)}</span></td>
         <td>
           <div class="dest">${escapeHtml(dest)}</div>
@@ -294,23 +525,27 @@ function render(data) {
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
 }
 
-let lastData = null;
-let timer = null;
 function scheduleRefresh() {
   if (timer) clearInterval(timer);
   const sec = Math.max(10, parseInt(intervalInput.value, 10) || 30);
-  timer = setInterval(fetchDepartures, sec * 1000);
+  timer = setInterval(() => fetchDepartures(), sec * 1000);
 }
 
-async function fetchDepartures() {
-  const key  = keyInput.value.trim();
-  const stop = stopInput.value.trim();
-  if (!key)  { setStatus('Saknar API-nyckel — öppna inställningar.', true); return; }
-  if (!stop) { setStatus('Saknar hållplats-ID.', true); return; }
+async function fetchDepartures(force) {
+  const tab = activeTab;
+  const key = keyInput.value.trim();
+  const stop = STOPS[tab];
+  if (!key) { setStatus('Saknar API-nyckel — öppna inställningar.', true); return; }
+  if (!stop) {
+    renderEmpty(`Ingen hållplats vald för "${TABS[tab].label}". Öppna Inställningar och sök upp den.`);
+    setStatus('Hållplats saknas', true);
+    return;
+  }
+  if (!force && Date.now() - lastFetch[tab] < 5000) return;
 
   const btn = $('refresh');
   btn.disabled = true;
@@ -320,8 +555,9 @@ async function fetchDepartures() {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     const data = await res.json();
-    lastData = data;
-    render(data);
+    lastData[tab] = data;
+    lastFetch[tab] = Date.now();
+    if (activeTab === tab) render(data);
     setStatus('Senast uppdaterad ' + new Date().toLocaleTimeString('sv-SE'));
   } catch (err) {
     setStatus('Fel: ' + err.message, true);
@@ -331,17 +567,26 @@ async function fetchDepartures() {
   }
 }
 
+setupPicker('to');
+setupPicker('from');
+
 loadConfig().then(() => {
+  renderTabs();
+  renderLegend();
+  updateHeader();
+  updatePickerLabels();
   scheduleRefresh();
   fetchDepartures();
 });
 
 // Räkna ned live var 10:e sekund utan att hämta om (renderar från cachen).
-setInterval(() => { if (lastData) render(lastData); }, 10000);
+setInterval(() => {
+  if (lastData[activeTab]) render(lastData[activeTab]);
+}, 10000);
 
 // Hämta om direkt när fliken blir aktiv igen.
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') fetchDepartures();
+  if (document.visibilityState === 'visible') fetchDepartures(true);
 });
 </script>
 </body>

@@ -5,6 +5,18 @@ ingen databas. Hämtar direkt från `realtime-api.trafiklab.se` i webbläsaren.
 
 Live: **https://busstabell.jaghjalpermigsjalv.com** (bakom Cloudflare Access).
 
+## Flikar
+
+- **Till jobb** — avgångar från hemhållplatsen (`TRAFIKLAB_STOP`). Rader mot
+  Liljeholmen/Älvsjö markeras blått, rader mot Farsta centrum orange.
+- **Från jobb** — avgångar från jobbhållplatsen (`TRAFIKLAB_STOP_FROM`, t.ex.
+  Hötorget). Linje 19 (mot Högdalen) markeras grönt.
+
+Känner du inte till hållplats-ID:t: öppna **⚙ Inställningar** i appen och sök på
+namnet — sökningen använder Trafiklabs stop-lookup och fyller i ID:t åt dig
+(sparas i den webbläsaren). `TRAFIKLAB_STOP_FROM` i `.env` gör att det gäller
+alla enheter direkt.
+
 ## API-nyckel — sätts EN gång
 
 Skaffa en gratis nyckel:
@@ -18,7 +30,8 @@ Lägg den i `~/busstabell/.env` på VPS:en (ej i git):
 
 ```
 TRAFIKLAB_KEY=din-nyckel
-TRAFIKLAB_STOP=740069150
+TRAFIKLAB_STOP=740069150        # "Till jobb"
+TRAFIKLAB_STOP_FROM=            # "Från jobb" — sök upp i appen om okänt
 ```
 
 Vid start skriver containern `/srv/config.json` ur dessa, och sidan läser den —
@@ -38,9 +51,9 @@ finns kvar som lokal override (sparas i den enhetens `localStorage`).
 
 ```sh
 docker network create web        # om det inte redan finns
-cd ~ && git clone git@github.com:Erik-Astrom/busstabell.git
+cd ~ && git clone https://github.com/Erik-Astrom/busstabell.git
 cd busstabell
-printf 'TRAFIKLAB_KEY=din-nyckel\nTRAFIKLAB_STOP=740069150\n' > .env
+printf 'TRAFIKLAB_KEY=din-nyckel\nTRAFIKLAB_STOP=740069150\nTRAFIKLAB_STOP_FROM=\n' > .env
 docker compose up -d --build
 ```
 
