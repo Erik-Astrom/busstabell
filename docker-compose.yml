@@ -4,6 +4,10 @@
 # Kant-Caddyn (i jaghjalpermigsjalv-stacken) terminerar TLS och proxar
 # busstabell.jaghjalpermigsjalv.com -> denna container via det delade
 # nätverket "web". Skapa nätverket en gång:  docker network create web
+#
+# ~/busstabell/.env på VPS:en (ej i git) — sätts EN gång:
+#   TRAFIKLAB_KEY=din-nyckel-fran-trafiklab
+#   TRAFIKLAB_STOP=740069150
 
 services:
   busstabell:
@@ -12,6 +16,9 @@ services:
     restart: unless-stopped
     environment:
       TZ: Europe/Stockholm
+      TRAFIKLAB_KEY: ${TRAFIKLAB_KEY:-}
+      TRAFIKLAB_STOP: ${TRAFIKLAB_STOP:-740069150}
+      TRAFIKLAB_INTERVAL: ${TRAFIKLAB_INTERVAL:-30}
     networks:
       - web
     healthcheck:

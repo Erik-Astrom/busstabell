@@ -168,9 +168,20 @@ const stopInput = $('stopId');
 const keyInput = $('apiKey');
 const intervalInput = $('interval');
 
-stopInput.value    = localStorage.getItem(LS.stopId)   || '740069150';
-keyInput.value     = localStorage.getItem(LS.apiKey)   || '';
-intervalInput.value = localStorage.getItem(LS.interval) || '30';
+// Ordning: serverns /config.json (satt i .env på VPS:en, funkar på alla
+// enheter direkt) → localStorage (egen override) → inbyggda värden.
+async function loadConfig() {
+  let server = {};
+  try {
+    const r = await fetch('config.json', { cache: 'no-store' });
+    if (r.ok) server = await r.json();
+  } catch (e) {}
+  stopInput.value =
+    localStorage.getItem(LS.stopId) || server.stop || '740069150';
+  keyInput.value = localStorage.getItem(LS.apiKey) || server.key || '';
+  intervalInput.value =
+    localStorage.getItem(LS.interval) || server.interval || '30';
+}
 
 [stopInput, keyInput, intervalInput].forEach(el =>
   el.addEventListener('change', () => {
@@ -320,8 +331,10 @@ async function fetchDepartures() {
   }
 }
 
-scheduleRefresh();
-fetchDepartures();
+loadConfig().then(() => {
+  scheduleRefresh();
+  fetchDepartures();
+});
 
 // Räkna ned live var 10:e sekund utan att hämta om (renderar från cachen).
 setInterval(() => { if (lastData) render(lastData); }, 10000);
