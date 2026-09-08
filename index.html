@@ -179,6 +179,16 @@
     font-weight: 600; font-size: 13px;
   }
   button.refresh:disabled { opacity: 0.5; cursor: wait; }
+  button.toggle {
+    background: var(--panel-2); color: var(--muted);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: 13px;
+    font-family: inherit;
+  }
+  button.toggle[aria-pressed="true"] {
+    background: rgba(255, 180, 84, 0.15); color: var(--warn);
+    border-color: var(--warn);
+  }
 </style>
 </head>
 <body>
@@ -186,6 +196,9 @@
   <h1>Kommande avgångar <span class="stop" id="stopName"></span></h1>
   <div style="display:flex; gap:10px; align-items:center">
     <span class="status" id="status">–</span>
+    <button class="toggle" id="wakeToggle" type="button" hidden aria-pressed="false">
+      ☀ Håll skärmen på
+    </button>
     <button class="refresh" id="refresh">Uppdatera</button>
   </div>
 </header>
@@ -602,9 +615,45 @@ setInterval(() => {
   if (lastData[activeTab]) render(lastData[activeTab]);
 }, 10000);
 
-// Hämta om direkt när fliken blir aktiv igen.
+// --- Håll skärmen tänd (Screen Wake Lock) ---
+const LS_WAKE = 'trafiklab_wakelock';
+const wakeBtn = $('wakeToggle');
+let wakeLock = null;
+let wakeWanted = false;
+
+async function acquireWake() {
+  if (!wakeWanted || wakeLock || !('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch (e) {
+    // t.ex. avslaget för att fliken är dold eller batterisparläge på
+    console.warn('wakeLock:', e.message);
+  }
+}
+async function releaseWake() {
+  if (wakeLock) { try { await wakeLock.release(); } catch (e) {} wakeLock = null; }
+}
+function setWake(on) {
+  wakeWanted = on;
+  wakeBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  localStorage.setItem(LS_WAKE, on ? '1' : '0');
+  if (on) acquireWake(); else releaseWake();
+}
+
+if ('wakeLock' in navigator) {
+  wakeBtn.hidden = false;
+  wakeBtn.addEventListener('click', () => setWake(!wakeWanted));
+  if (localStorage.getItem(LS_WAKE) === '1') setWake(true);
+}
+
+// Hämta om direkt när fliken blir aktiv igen — och återta wake lock, som
+// alltid släpps när fliken döljs.
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') fetchDepartures(true);
+  if (document.visibilityState === 'visible') {
+    fetchDepartures(true);
+    acquireWake();
+  }
 });
 </script>
 </body>
