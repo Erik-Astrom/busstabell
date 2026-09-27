@@ -52,5 +52,5 @@ Push till `master` → (auto-deploy när SSH-secrets är satta, annars manuellt)
 
 ## Bredare bild
 
-Detta är en av tre sajter på Erik's VPS. Cross-projekt-kontext + status finns i
-Claude Codes minne när man kör från `~/Work/jaghjalpermigsjalv` (`subdomaner`-minnet).
+Detta är en av tre sajter på Erik's VPS. Gemensam plattformskontext finns i `~/jaghjalpermigsjalv/CLAUDE.md` och i Claude Codes
+gemensamma minne (`subdomaner`-minnet), oavsett var sessionen startas.
